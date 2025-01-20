@@ -3,17 +3,7 @@ import { NextResponse } from 'next/server'
 const OLLAMA_API_URL = 'http://localhost:11434/api/generate'
 
 export interface OllamaResponse {
-    model: string
-    created_at: string
     response: string
-    done: boolean
-    done_reason: string
-    context: string
-    total_duration: number
-    load_duration: number
-    prompt_eval_duration: number
-    eval_count: number
-    eval_duration: number
 }
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -23,21 +13,6 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
         binary += String.fromCharCode(bytes[i])
     }
     return btoa(binary)
-}
-
-const callOllama = async (payload: object): Promise<OllamaResponse> => {
-    const response = await fetch(OLLAMA_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-        const error = await response.text()
-        throw new Error(`Ollama API error: ${error}`)
-    }
-
-    return response.json()
 }
 
 export async function POST(req: Request) {
@@ -57,16 +32,17 @@ export async function POST(req: Request) {
         const base64 = arrayBufferToBase64(bytes)
 
         // 调用 minicpm-v API 进行图片识别
-        const response = await fetch('http://localhost:11434/api/generate', {
+        const response = await fetch(OLLAMA_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 model: 'minicpm-v',
-                prompt: '请描述这张图片的内容：',
+                prompt: '请详细描述这张图片的内容，包括图片中的主要元素、文字、布局等信息。',
                 images: [base64],
-                stream: false
+                stream: false,
+                format: 'json'
             }),
         })
 

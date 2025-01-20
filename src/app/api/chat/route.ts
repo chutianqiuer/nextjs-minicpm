@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+const OLLAMA_API_URL = 'http://localhost:11434/api/generate'
+
 export async function POST(req: Request) {
     try {
         const { question, imageContent } = await req.json()
@@ -15,10 +17,10 @@ ${imageContent}
 用户问题：
 ${question}
 
-请回答：`
+请根据图片描述详细回答用户的问题。回答要准确、完整，并保持对话的语气友好自然。`
 
         // 调用 llama3.2 API
-        const response = await fetch('http://localhost:11434/api/generate', {
+        const response = await fetch(OLLAMA_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -26,7 +28,10 @@ ${question}
             body: JSON.stringify({
                 model: 'llama2',
                 prompt: prompt,
-                stream: false
+                stream: false,
+                temperature: 0.7,
+                top_p: 0.9,
+                max_tokens: 500
             }),
         })
 
