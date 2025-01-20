@@ -14,6 +14,7 @@ export default function Home() {
     const [fileContent, setFileContent] = useState<OllamaResponse | null>(null)
     const [userQuestion, setUserQuestion] = useState('')
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+    const [isLoading, setIsLoading] = useState(false)
 
     const handleFileSelect = (res: OllamaResponse) => {
         setFileContent(res)
@@ -25,22 +26,50 @@ export default function Home() {
 
     const handleQuestionSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        if (!userQuestion.trim()) return
+        if (!userQuestion.trim() || !fileContent) return
 
+        // 添加用户问题到聊天历史
         setChatHistory((prevHistory: ChatMessage[]) => [...prevHistory, {
             role: 'user',
             content: userQuestion
         }])
 
-        // 这里可以添加调用 llama3.2 的逻辑
-        const response = fileContent?.response || '抱歉，我无法理解图片内容。'
-        
-        setChatHistory((prevHistory: ChatMessage[]) => [...prevHistory, {
-            role: 'assistant',
-            content: response
-        }])
+        setIsLoading(true)
+        try {
+            // 调用聊天 API
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    question: userQuestion,
+                    imageContent: fileContent.response
+                }),
+            })
 
-        setUserQuestion('')
+            if (!response.ok) {
+                throw new Error('请求失败')
+            }
+
+            const data = await response.json()
+            
+            // 添加助手回答到聊天历史
+            setChatHistory((prevHistory: ChatMessage[]) => [...prevHistory, {
+                role: 'assistant',
+                content: data.response
+            }])
+        } catch (error) {
+            console.error('Error:', error)
+            // 添加错误消息到聊天历史
+            setChatHistory((prevHistory: ChatMessage[]) => [...prevHistory, {
+                role: 'system',
+                content: '抱歉，处理您的问题时出现错误。请稍后重试。'
+            }])
+        } finally {
+            setIsLoading(false)
+            setUserQuestion('')
+        }
     }
 
     return (
@@ -74,12 +103,18 @@ export default function Home() {
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setUserQuestion(e.target.value)}
                             placeholder="请输入您的问题..."
                             className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={isLoading || !fileContent}
                         />
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                isLoading || !fileContent
+                                    ? 'bg-gray-300 cursor-not-allowed'
+                                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                            }`}
+                            disabled={isLoading || !fileContent}
                         >
-                            发送
+                            {isLoading ? '处理中...' : '发送'}
                         </button>
                     </div>
                 </form>
