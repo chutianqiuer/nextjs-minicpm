@@ -39,50 +39,47 @@ const callOllama = async (payload: object): Promise<OllamaResponse> => {
 export async function POST(req: Request) {
     try {
         const formData = await req.formData()
-        const file = formData.get('file')
-
-        if (!file || !(file instanceof Blob)) {
+        const file = formData.get('file') as File
+        
+        if (!file) {
             return NextResponse.json(
-                { error: 'Valid file is required' },
+                { error: '没有找到文件' },
                 { status: 400 }
             )
         }
 
-        // Extract text from image
-        const base64Image = await fileToBase64(file)
-        const ocrResult = await callOllama({
-            model: 'minicpm-v',
-            prompt: 'Explain the image precisely.',
-            stream: false,
-            images: [base64Image],
-        })
+        // 将文件转换为 base64
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const base64 = buffer.toString('base64')
 
-        // Structure the extracted text as JSON
-        const llmResult = await callOllama({
-            model: 'llama3.2',
-            prompt: `Provide sentiment analysis in the form of JSON. Provide sentiment, emotions, and reasoning: ${ocrResult.response}`,
-            stream: false,
-            format: 'json',
-        })
-
-        // Validate JSON response
-        try {
-            return NextResponse.json({ result: llmResult })
-        } catch {
-            return NextResponse.json(
-                { error: 'Failed to parse structured response' },
-                { status: 422 }
-            )
-        }
-    } catch (error) {
-        console.error('OCR processing error:', error)
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : 'An unexpected error occurred',
+        // 调用 minicpm-v API 进行图片识别
+        const response = await fetch('http://localhost:11434/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+                model: 'minicpm-v',
+                prompt: '请描述这张图片的内容：',
+                images: [base64],
+                stream: false
+            }),
+        })
+
+        if (!response.ok) {
+            throw new Error('图片识别请求失败')
+        }
+
+        const data = await response.json()
+        
+        return NextResponse.json({
+            response: data.response
+        })
+    } catch (error) {
+        console.error('Error processing file:', error)
+        return NextResponse.json(
+            { error: '处理文件时发生错误' },
             { status: 500 }
         )
     }

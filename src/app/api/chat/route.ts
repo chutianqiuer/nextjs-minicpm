@@ -4,16 +4,19 @@ export async function POST(req: Request) {
     try {
         const { question, imageContent } = await req.json()
 
-        // 这里构建发送给 llama3.2 的提示
+        // 构建发送给 llama3.2 的提示
         const prompt = `
-基于以下图片内容回答问题：
+你是一个智能助手。我会给你一个图片的描述和一个问题。请你基于图片描述来回答问题。
+请用自然、友好的对话方式回答，不要输出JSON格式。
 
-图片内容：${imageContent}
+图片描述：
+${imageContent}
 
-问题：${question}
+用户问题：
+${question}
 
-请用对话的方式回答上述问题。
-`
+请回答：`
+
         // 调用 llama3.2 API
         const response = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
@@ -26,6 +29,10 @@ export async function POST(req: Request) {
                 stream: false
             }),
         })
+
+        if (!response.ok) {
+            throw new Error('对话生成请求失败')
+        }
 
         const data = await response.json()
         
