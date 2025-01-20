@@ -16,9 +16,13 @@ export interface OllamaResponse {
     eval_duration: number
 }
 
-const fileToBase64 = async (file: Blob): Promise<string> => {
-    const buffer = await file.arrayBuffer()
-    return Buffer.from(buffer).toString('base64')
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i])
+    }
+    return btoa(binary)
 }
 
 const callOllama = async (payload: object): Promise<OllamaResponse> => {
@@ -50,8 +54,7 @@ export async function POST(req: Request) {
 
         // 将文件转换为 base64
         const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-        const base64 = buffer.toString('base64')
+        const base64 = arrayBufferToBase64(bytes)
 
         // 调用 minicpm-v API 进行图片识别
         const response = await fetch('http://localhost:11434/api/generate', {

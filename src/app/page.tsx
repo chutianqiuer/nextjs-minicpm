@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { FormEvent, ChangeEvent } from 'react'
 import { FileUpload } from '../components/file-upload'
 import { OllamaResponse } from './api/process-file/route'
@@ -11,10 +11,15 @@ interface ChatMessage {
 }
 
 export default function Home() {
+    const [mounted, setMounted] = useState(false)
     const [fileContent, setFileContent] = useState<OllamaResponse | null>(null)
     const [userQuestion, setUserQuestion] = useState('')
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const handleFileSelect = (res: OllamaResponse) => {
         setFileContent(res)
@@ -70,6 +75,10 @@ export default function Home() {
             setIsLoading(false)
             setUserQuestion('')
         }
+    }
+
+    if (!mounted) {
+        return null
     }
 
     return (
