@@ -112,16 +112,16 @@ export default function Home() {
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setUserQuestion(e.target.value)}
                             placeholder="请输入您的问题..."
                             className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={isLoading || !fileContent}
+                            disabled={isLoading}
                         />
                         <button
                             type="submit"
                             className={`px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                isLoading || !fileContent
+                                isLoading
                                     ? 'bg-gray-300 cursor-not-allowed'
                                     : 'bg-blue-500 text-white hover:bg-blue-600'
                             }`}
-                            disabled={isLoading || !fileContent}
+                            disabled={isLoading}
                         >
                             {isLoading ? '处理中...' : '发送'}
                         </button>
